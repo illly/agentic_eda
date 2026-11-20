@@ -1,27 +1,67 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EDA 에이전트</title>
-  <link rel="stylesheet" href="/static/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eda-agent</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <aside>
-    <h2>도구 <button id="refresh" type="button">새로고침</button></h2>
-    <p id="errors" role="alert"></p>
-    <ul id="tools"></ul>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">eda-agent<span>반도체 데이터 EDA 에이전트</span></div>
+    <div class="chips"><span class="chip" id="chipTools">도구 –</span><span class="chip"><a href="http://127.0.0.1:8001/" target="_blank" rel="noopener">MCP 게이트웨이</a></span></div>
+  </div>
+</header>
+<div id="errors" class="errors" role="alert" hidden></div>
+
+<main class="workspace" id="workspace">
+  <aside class="work-tools">
+    <details class="card" open>
+      <summary><h2>도구</h2><span class="badge" id="toolCount">–</span></summary>
+      <p class="hint">skill과 MCP 게이트웨이가 제공합니다. 이름을 누르면 설명이 펼쳐집니다.</p>
+      <button class="ghost" id="refresh" type="button">새로고침</button>
+      <div id="tools" class="merged"></div>
+    </details>
   </aside>
-  <main>
-    <h1>EDA 에이전트</h1>
-    <div id="log" aria-live="polite"></div>
-    <form id="form">
-      <label for="message">요청</label>
-      <textarea id="message" rows="2" required placeholder="예: secom 데이터의 컬럼 구성을 알려줘"></textarea>
-      <button id="send" type="submit">보내기</button>
-      <button id="reset" type="button">대화 초기화</button>
-    </form>
-  </main>
-  <script src="/static/app.js"></script>
+
+  <div class="work-main">
+    <section class="card">
+      <div class="card-head"><h2>파이프라인</h2><span class="badge" id="pipeCount">노드 0개</span></div>
+      <p class="hint">분석을 요청하면 에이전트가 왼쪽 도구에서 데이터를 고르고, 원본 데이터셋부터 결과까지 이 파이프라인을 만들어 실행합니다. 중간·최종 데이터는 노드의 [공유]로 게이트웨이 링크를 보낼 수 있고, [대화에 넣기]로 그 데이터를 기준으로 시각화를 요청할 수 있습니다.</p>
+      <div id="pipeEmpty" class="empty">요청을 보내면 에이전트가 만드는 파이프라인이 여기에 그려집니다.</div>
+      <div class="pipe-wrap" tabindex="0" role="group" aria-label="파이프라인 그래프"><div id="pipeline" class="pipe"></div></div>
+      <ol id="pipeLog" class="pipe-log" aria-live="polite" aria-label="파이프라인 변경 기록"></ol>
+    </section>
+
+    <section class="card" id="resultCard" aria-labelledby="resultHeading" hidden>
+      <div class="card-head"><h2 id="resultHeading">시각화</h2></div>
+      <p class="hint">대화로 요청한 차트가 여기에 쌓입니다. 최근 것이 위에 있습니다.</p>
+      <div id="charts"></div>
+    </section>
+  </div>
+
+  <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" aria-label="대화창 너비 조절 (좌우 화살표 키)"
+       aria-valuemin="300" aria-valuemax="1200" aria-valuenow="420" tabindex="0"></div>
+
+  <aside class="work-chat" id="chatPane">
+    <section class="card interaction-card chat-card">
+      <div class="card-head"><h2>대화창</h2><button class="ghost" id="reset" type="button">대화 초기화</button></div>
+      <div id="log" class="chat" aria-live="polite"></div>
+      <div id="starters" class="starters">
+        <p class="hint">이렇게 시작해 보세요. 누르면 입력칸에 들어갑니다.</p>
+        <button class="ghost starter" type="button">secom 웨이퍼 데이터에서 양품과 불량의 차이가 큰 센서를 분석해줘</button>
+        <button class="ghost starter" type="button">infineon 장비2 센서를 웨이퍼 단위로 요약하고 검사 결과와의 관계를 분석해줘</button>
+        <button class="ghost starter" type="button">wafer_fault 데이터의 품질을 점검해줘. 결측이 많은 센서와 값이 변하지 않는 센서를 알려줘</button>
+      </div>
+      <form id="form" class="ask">
+        <label class="sr-only" for="message">에이전트에게 보낼 요청</label>
+        <input id="message" type="text" required autocomplete="off" placeholder="secom에서 양품과 불량의 차이가 큰 센서 5개를 찾아줘">
+        <button class="primary" id="send" type="submit">보내기</button>
+      </form>
+    </section>
+  </aside>
+</main>
+<script src="/static/app.js"></script>
 </body>
 </html>

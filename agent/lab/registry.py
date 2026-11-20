@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-"""AI에게 넘길 도구 목록. 지금은 MCP 서버(mcp_config.json)가 알려준 도구뿐이다.
+"""AI에게 넘길 도구 목록. skill을 불러오는 load_skill + MCP 서버(mcp_config.json)가 알려준 도구.
 
 항목 = {"name", "description", "parameters", "source", "call"(인자 dict -> 결과)}
 내장 도구를 추가하려면 build()에서 같은 형태의 항목을 entries에 더한다.
 """
 
-from . import config, mcp_client
+from . import config, mcp_client, skills
 
 
 def build():
     """도구 목록과 사용자에게 보여줄 오류 문구를 함께 돌려준다."""
     entries, errors = mcp_client.connect_all(config.MCP_CONFIG_PATH)
+    entries = skills.entries() + entries
     seen, unique = set(), []
     for entry in entries:
         if entry["name"] not in seen:   # 같은 이름이 겹치면 먼저 등록된 쪽을 남긴다

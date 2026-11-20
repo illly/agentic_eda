@@ -10,11 +10,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE_DIR = os.path.join(ROOT, "state")
 SYSTEM_PROMPT_PATH = os.path.join(STATE_DIR, "system_prompt.txt")
 MCP_CONFIG_PATH = os.path.join(ROOT, "mcp_config.json")
+SKILLS_DIR = os.path.join(ROOT, "skills")
+GATEWAY = "http://127.0.0.1:8001"        # 파이프라인 그림을 가져오는 곳 (MCP 주소는 mcp_config.json)
 
 GEN_MODEL = "gpt-5.6-luna"
 REASONING_EFFORT = "none"
 TEMPERATURE = 0.0
-MAX_TOOL_STEPS = 10                      # 한 요청에서 도구 호출을 반복할 최대 횟수
+MAX_TOOL_STEPS = 20                      # 한 요청에서 도구 호출을 반복할 최대 횟수. 파이프라인은 노드마다 한 번씩 부른다
 
 HOST = "127.0.0.1"
 PORT = 8002                              # API 서버(8000) · MCP 게이트웨이(8001) 다음

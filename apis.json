@@ -1,10 +1,5 @@
 [
   {
-    "name": "secom",
-    "description": "UCI SECOM 반도체 공정 센서 데이터 (CSV, 1,567행 × 592열). 컬럼: label(-1 양품, 1 불량), timestamp, f0~f589(익명 센서값, 결측 있음). 한 행이 길어 한 번에 2행 정도만 온다.",
-    "url": "http://127.0.0.1:8000/secom"
-  },
-  {
     "name": "infineon_equipment1",
     "description": "Infineon 공정 장비 1의 센서 시계열 (CSV, 170,896행 × 27열). 컬럼: lot, wafer, timestamp(웨이퍼당 176 시점), sensor_1~sensor_24. 일부 셀은 원본에서 깨진 문자열이다.",
     "url": "http://127.0.0.1:8000/infineon/equipment1"
@@ -20,8 +15,13 @@
     "url": "http://127.0.0.1:8000/infineon/response"
   },
   {
+    "name": "secom",
+    "description": "UCI SECOM 반도체 공정 센서 데이터 (CSV, 1,567행 × 592열). 컬럼: label(-1 양품, 1 불량), timestamp, f0~f589(익명 센서값, 결측 있음).",
+    "url": "http://127.0.0.1:8000/secom"
+  },
+  {
     "name": "wafer_fault",
-    "description": "웨이퍼 결함 샘플 (CSV, 100행 × 592열). 컬럼: 웨이퍼 이름, Sensor-1~Sensor-590, Good/Bad(-1 양품, 1 불량). 한 행이 길어 한 번에 2~3행 정도만 온다.",
+    "description": "웨이퍼 결함 샘플 (CSV, 100행 × 592열). 컬럼: 웨이퍼 이름, Sensor-1~Sensor-590, Good/Bad(-1 양품, 1 불량).",
     "url": "http://127.0.0.1:8000/wafer-fault"
   }
 ]

@@ -9,6 +9,8 @@ import json
 import os
 import sys
 import threading
+import urllib.error
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -63,7 +65,25 @@ def handle_chat(payload):
 
 def handle_reset(_payload):
     CHAT["items"] = []
+    clear = registry.find(tools()[0], "pipeline_clear")
+    if clear:
+        clear["call"]({})             # 대화를 비우면 화면의 파이프라인도 비운다
     return {"ok": True}
+
+
+def gateway_get(path):
+    """게이트웨이의 GET을 대신 불러 (상태 코드, JSON)을 돌려준다. 화면이 채팅 중에도 계속 물어 진행 상황을 그린다."""
+    try:
+        with urllib.request.urlopen(config.GATEWAY + path, timeout=40) as response:
+            return 200, json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read().decode("utf-8")).get("detail")
+        except (ValueError, AttributeError):
+            detail = None
+        return exc.code, {"error": str(detail or "게이트웨이가 요청을 처리하지 못했습니다.")}
+    except (OSError, ValueError):
+        return 502, {"error": "MCP 게이트웨이에 연결하지 못했습니다."}
 
 
 ROUTES = {"/api/chat": handle_chat, "/api/chat/reset": handle_reset}
@@ -104,6 +124,10 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/state":
             with LOCK:
                 self._json(state())
+        elif path == "/api/pipeline":
+            # LOCK을 잡지 않는다. /api/chat이 락을 쥐고 도는 동안 읽어야 진행 상황이 보인다.
+            code, payload = gateway_get("/pipeline")
+            self._json(payload, code)
         else:
             self._send(404, "not found", "text/plain; charset=utf-8")
 
