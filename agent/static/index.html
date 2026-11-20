@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDA 에이전트</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <aside>
+    <h2>도구 <button id="refresh" type="button">새로고침</button></h2>
+    <p id="errors" role="alert"></p>
+    <ul id="tools"></ul>
+  </aside>
+  <main>
+    <h1>EDA 에이전트</h1>
+    <div id="log" aria-live="polite"></div>
+    <form id="form">
+      <label for="message">요청</label>
+      <textarea id="message" rows="2" required placeholder="예: secom 데이터의 컬럼 구성을 알려줘"></textarea>
+      <button id="send" type="submit">보내기</button>
+      <button id="reset" type="button">대화 초기화</button>
+    </form>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

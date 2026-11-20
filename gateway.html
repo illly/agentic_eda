@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP 게이트웨이</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0 auto; max-width: 960px; padding: 24px 16px; font: 15px/1.5 system-ui, "Malgun Gothic", sans-serif; color: #1a1a1a; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    h2 { font-size: 16px; margin: 0; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+    .bar { display: flex; justify-content: space-between; align-items: center; margin: 28px 0 8px; }
+    #count { font-weight: 400; color: #777; }
+    #rows { list-style: none; margin: 0; padding: 0; border: 1px solid #ddd; border-radius: 8px; }
+    #rows li { display: grid; grid-template-columns: 96px 1fr auto; gap: 4px 12px; align-items: start; padding: 12px 16px; }
+    #rows li + li { border-top: 1px solid #e6e6e6; }
+    #rows .empty { display: block; color: #777; }
+    .info { min-width: 0; overflow-wrap: anywhere; }
+    .name { font-weight: 600; }
+    .url { font: 13px ui-monospace, Consolas, monospace; color: #555; }
+    .desc { margin-top: 4px; font-size: 13px; color: #555; }
+    .state { justify-self: start; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #eee; color: #555; }
+    .state.up { background: #e3f4e8; color: #17753a; }
+    .state.down { background: #fde8ea; color: #b00020; }
+    @media (max-width: 560px) { #rows li { grid-template-columns: 1fr auto; } .info { grid-column: 1 / -1; grid-row: 2; } }
+    dialog { width: min(560px, calc(100vw - 32px)); padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+    dialog::backdrop { background: rgba(0, 0, 0, .4); }
+    form { display: grid; gap: 10px; }
+    label { font-size: 13px; color: #555; }
+    input { width: 100%; font: inherit; padding: 8px; }
+    .buttons { display: flex; gap: 8px; justify-content: flex-end; }
+    button { font: inherit; padding: 6px 12px; cursor: pointer; }
+    #status { min-height: 1.5em; margin: 0; color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>MCP 게이트웨이</h1>
+  <p>등록한 HTTP GET API를 MCP 도구로 제공합니다. MCP 접속 주소: <code id="endpoint"></code> · 호출 테스트는 <a href="/docs">Swagger</a>에서</p>
+
+  <div class="bar">
+    <h2>등록된 API <span id="count"></span></h2>
+    <button id="open" type="button">등록</button>
+  </div>
+  <ul id="rows"></ul>
+
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form id="form">
+      <h2 id="dialog-title">API 등록</h2>
+      <div><label for="name">이름 — 영문·숫자·_·- (같은 이름이면 덮어씁니다)</label><input id="name" required pattern="[A-Za-z0-9_\-]{1,64}" placeholder="secom"></div>
+      <div><label for="description">설명 — 모델이 도구를 고를 때 읽습니다</label><input id="description" placeholder="SECOM 센서 데이터 (CSV)"></div>
+      <div><label for="url">URL</label><input id="url" type="url" required placeholder="http://127.0.0.1:8000/secom"></div>
+      <p id="status" role="alert"></p>
+      <div class="buttons">
+        <button id="cancel" type="button">취소</button>
+        <button type="submit">등록</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    $("endpoint").textContent = location.origin + "/mcp";
+
+    // 등록 값은 사용자 입력이다. 항상 textContent로만 넣는다.
+    function make(tag, text) {
+      const node = document.createElement(tag);
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    // FastAPI 오류 본문: {"detail": "문장"} 또는 {"detail": [{"loc": [...], "msg": "..."}]}
+    async function errorText(res) {
+      try {
+        const detail = (await res.json()).detail;
+        if (typeof detail === "string") return detail;
+        return detail.map((d) => d.loc[d.loc.length - 1] + ": " + d.msg).join(" / ");
+      } catch (err) {
+        return "요청에 실패했습니다 (HTTP " + res.status + ").";
+      }
+    }
+
+    // 게이트웨이를 거쳐 원본 API의 첫 줄만 받아 본다. 성공하면 살아 있는 것이다.
+    async function check(name, cell) {
+      let alive = false;
+      try {
+        alive = (await fetch("/apis/" + encodeURIComponent(name) + "/test?limit=1")).ok;
+      } catch (err) { /* 게이트웨이 자체가 응답하지 않음 */ }
+      cell.textContent = alive ? "정상" : "응답 없음";
+      cell.className = "state " + (alive ? "up" : "down");
+    }
+
+    async function load() {
+      const apis = await (await fetch("/apis")).json();
+      const rows = $("rows");
+      rows.replaceChildren();
+      $("count").textContent = "(" + apis.length + ")";
+      if (!apis.length) {
+        const empty = make("li", "등록된 API가 없습니다. [등록]을 눌러 추가하세요.");
+        empty.className = "empty";
+        rows.append(empty);
+      }
+      for (const api of apis) {
+        const state = make("span", "확인 중…");
+        state.className = "state";
+        check(api.name, state);
+
+        const remove = make("button", "삭제");
+        remove.type = "button";
+        remove.setAttribute("aria-label", api.name + " 삭제");
+        remove.addEventListener("click", async () => {
+          if (!confirm(api.name + " 을(를) 삭제할까요?")) return;
+          await fetch("/apis/" + encodeURIComponent(api.name), { method: "DELETE" });
+          load();
+        });
+
+        const info = make("div");
+        info.className = "info";
+        for (const [cls, text] of [["name", api.name], ["url", api.url], ["desc", api.description]]) {
+          if (!text) continue;
+          const line = make("div", text);
+          line.className = cls;
+          info.append(line);
+        }
+        const item = make("li");
+        item.append(state, info, remove);
+        rows.append(item);
+      }
+    }
+
+    $("open").addEventListener("click", () => {
+      $("form").reset();
+      $("status").textContent = "";
+      $("dialog").showModal();
+    });
+    $("cancel").addEventListener("click", () => $("dialog").close());
+
+    $("form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const body = { name: $("name").value.trim(), description: $("description").value.trim(), url: $("url").value.trim() };
+      const res = await fetch("/apis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        $("status").textContent = await errorText(res);
+        return;
+      }
+      $("dialog").close();
+      load();
+    });
+
+    load();
+  </script>
+</body>
+</html>
